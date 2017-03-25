@@ -65,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
     private Button save;
     private Button start;
     private Button reset;
+    private EditText initHeading;
     private EditText userHeight;
     private EditText fileName;
     private TextView point;
@@ -220,6 +221,7 @@ public class MainActivity extends AppCompatActivity {
         screen = (TextView) findViewById(R.id.screen);
         bitmapXY = (TextView) findViewById(R.id.bitmap);
         rotationXYZ = (TextView) findViewById(R.id.rotation);
+        initHeading = (EditText) findViewById(R.id.initHeading);
         userHeight = (EditText) findViewById(R.id.userHeight);
         fileName = (EditText) findViewById(R.id.fileName);
         stepLength = (TextView) findViewById(R.id.stepLength);
@@ -266,35 +268,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void start(View view){
-        //step_new = 0;
-        double height =  Double.parseDouble(userHeight.getText().toString());
+        //Initial heading
+        heading_Initial =  (float)Double.parseDouble(initHeading.getText().toString());
 
-        dStep_h = (height - 155.911)/0.262/100;
-        BigDecimal sl = new BigDecimal(dStep_h);
-
-
-        userHeight.setVisibility(View.GONE);
-        //stepLength.setText("SL:0.75  SL_H:" + sl.setScale(2, BigDecimal.ROUND_DOWN));
-
-        //dStep = height;
+        //get the filename
         filename = fileName.getText().toString();
 
-        location_x_last = location_x = downx;
-        location_y_last = location_y = downy;
-        location_x_h = location_x;
-        location_y_h = location_y;
-        heading_Initial = (float)height;
+        //Initial the first location
+        location_x = downx;
+        location_y = downy;
+
+        //
         z_degree_last = axis_z_degree_Initial = axis_z_degree;
 
+        //Record date
         SimpleDateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd    hh:mm:ss");
         String date = sDateFormat.format(new java.util.Date()) + "\n";
         write(date);
-        isRunning = true;
-        mag_declination = getGeoNorthDeclination();;
-//        heading_Initial += mag_declination;
-//        heading_Refine_test = heading_Initial;
-        //rotationXYZ.setText(String.format("磁偏角：%7.3f", (mag_declination)));
 
+        // Set the thread can be run
+        isRunning = true;
+
+        // Get the dclination
+        mag_declination = getGeoNorthDeclination();
+
+        //start the thread
         setupDetectorTimestampUpdaterThread();
     }
 
@@ -305,20 +303,12 @@ public class MainActivity extends AppCompatActivity {
                 super.handleMessage(msg);
                 BigDecimal x = new BigDecimal(location_x);
                 BigDecimal y = new BigDecimal(location_y);
-                //test
-//                BigDecimal x_h = new BigDecimal(location_x_h);
-//                BigDecimal y_h = new BigDecimal(location_y_h);
 
-                //rotationXYZ.setText("axis_z_degree:" + axis_z_degree);
                 if(walkStraight == true) stepLength.setText("正在直行");
                 else stepLength.setText("正在转弯");
 
-//                paint.setColor(Color.RED);
-//                canvas.drawPoint((float) location_x_h, (float) location_y_h, paint);
-
-                //point.setText("loactionX: " + location_x + " loactionY: " + location_y);
                 point.setText("loactionX: " + x.setScale(2, BigDecimal.ROUND_DOWN) + " loactionY: " + y.setScale(2, BigDecimal.ROUND_DOWN));
-                //screen.setText("heading:" + heading + "\norientation:" + heading_Refine + "\ncomplementary:" + heading_Refine_test);
+
                 screen.setText("orientation:" + heading_Refine);
                 paint.setColor(Color.GREEN);
                 canvas.drawPoint((float) location_x, (float) location_y, paint);
@@ -340,11 +330,8 @@ public class MainActivity extends AppCompatActivity {
 
                         distance = (step_new - step_temp) * dStep;
                         distance = distance * scale;
-                        // test
-//                        distance_h = (step_new - step_temp) * dStep_h;
-//                        distance_h = distance_h * scale;
-                        step_temp = step_new;
 
+                        step_temp = step_new;
 
                         if(gyo_degree_last == 0) {
                             gyo_degree_last = gyo_degree = (float) (axis_z_degree - axis_z_degree_Initial);
@@ -363,33 +350,6 @@ public class MainActivity extends AppCompatActivity {
                         gyo_degree_last = gyo_degree;
 
 
-                        //test height
-//                        float gyo_degree_interval = (float) (axis_z_degree - z_degree_last);
-//                        System.out.println("gyo_degree_interval:" + gyo_degree_interval);
-//                        System.out.println("heading_Refine_test:" + heading_Initial);
-//                        float heading_diff = heading - heading_Refine_test;
-//                        System.out.println("heading_diff:" + heading_diff );
-//                        System.out.println("---------------------");
-//                        if (gyo_degree_interval < 0 ){
-//                            if(heading_diff < -180)
-//                                heading_Refine_test += complementary(gyo_degree_interval, normalAngle(heading_diff));
-//                            else
-//                                heading_Refine_test += complementary(gyo_degree_interval, heading_diff);
-//                        }else{
-//                            if(heading_diff < 0) {
-//                                if(heading_diff < -180)
-//                                    heading_Refine_test += complementary(gyo_degree_interval, normalAngle(heading_diff));
-//                                else
-//                                    heading_Refine_test += complementary(gyo_degree_interval, heading_diff);
-//                            }
-//                            else
-//                                 heading_Refine_test -= gyo_degree_interval;
-//                        }
-//
-//                        heading_Refine_test = normalAngle(heading_Refine_test);
-//                        calculateLatitude_h(location_x_h, location_y_h, distance, heading_Refine_test);
-//                        z_degree_last = axis_z_degree;
-
                         handler.sendEmptyMessage(0);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -407,7 +367,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
     public void reset(View view){
         step_old = step_new;
         bitmapXY.setText("Steps: " + step_new);
@@ -421,7 +380,7 @@ public class MainActivity extends AppCompatActivity {
         canvas.drawBitmap(bitmap, new Matrix(), paint);
         // 将处理后的图片放入imageview中
         image.setImageBitmap(copyBitmap);
-        // 设置imageview监听
+
         image.setOnTouchListener(new MyTouchListener());
     }
 
@@ -534,7 +493,6 @@ public class MainActivity extends AppCompatActivity {
                 mInclination = SensorManager.getInclination(inclineMatrix);
                 if (count++ % 100 == 0) {
                     heading = normalAngle((float) Math.toDegrees(orientation[0]));
-//                    screen.setText("heading:" + normalAngle(heading));
                     count = 1;
                 }
             }
@@ -565,28 +523,6 @@ public class MainActivity extends AppCompatActivity {
         }
         location_x = x;
         location_y = y;
-        //System.out.println("loactionX: " + location_x + " loactionY: " + location_y);
-    }
-
-    private void calculateLatitude_h(double x,double y,double s,float q){
-        q = normalAngle(q);
-        //System.out.println("q:" + q + "  s:" + s);
-        if (q>=0 &&q <90) {
-            x = x + s * Math.sin(q * PI);
-            y = y - s * Math.cos(q * PI);
-        }else if(q>=90 && q<180){
-            x = x + s * Math.cos((q - 90) * PI);
-            y = y + s * Math.sin((q - 90) * PI);
-        }else if(q>=180 && q<270){
-            x = x - s * Math.sin((q - 180) * PI);
-            y = y + s * Math.cos((q - 180) * PI);
-        }else if(q>=270 && q<=360){
-            x = x - s * Math.cos((q - 270) * PI);
-            y = y - s * Math.sin((q - 270) * PI);
-        }
-        location_x_h = x;
-        location_y_h = y;
-        //System.out.println("downx: " + downx + " downy: " + downy);
         //System.out.println("loactionX: " + location_x + " loactionY: " + location_y);
     }
 
@@ -634,7 +570,6 @@ public class MainActivity extends AppCompatActivity {
         public boolean onTouch(View v, MotionEvent event) {
             int action = event.getAction();
             switch (action) {
-                // 按下
                 case MotionEvent.ACTION_DOWN:
                     downx = event.getX();
                     downy = event.getY();
@@ -642,26 +577,19 @@ public class MainActivity extends AppCompatActivity {
                     point.setText("X:" + downx + "  Y:" + downy);
                     image.invalidate();
                     break;
-                // 移动
                 case MotionEvent.ACTION_MOVE:
-                    // 路径画板
                     x = event.getX();
                     y = event.getY();
-                    // 画线
                     canvas.drawLine(downx, downy, x, y, paint);
-                    // 刷新image
                     image.invalidate();
                     downx = x;
                     downy = y;
                     break;
                 case MotionEvent.ACTION_UP:
                     break;
-
                 default:
                     break;
             }
-            // true：告诉系统，这个触摸事件由我来处理
-            // false：告诉系统，这个触摸事件我不处理，这时系统会把触摸事件传递给imageview的父节点
             return true;
         }
 
@@ -681,23 +609,17 @@ public class MainActivity extends AppCompatActivity {
         // 保存画好的图片
         if (copyBitmap != null) {
             try {
-
-                // 获取图库Uri路径
                 Uri imageUri = getContentResolver().insert(
                         MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new ContentValues());
-                // 获取输出流
                 OutputStream outputStream = getContentResolver()
                         .openOutputStream(imageUri);
-                // 将alterBitmap存入图库
                 copyBitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
-                //getApplicationContext()获取应用Activity的context
-                Toast.makeText(getApplicationContext(), "保存成功!",
+                Toast.makeText(getApplicationContext(), "save successfully!",
                         Toast.LENGTH_SHORT).show();
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
         }
-        //canvas.drawLine(0, 0, 200, 200, paint);
     }
 
     @Override
@@ -706,22 +628,17 @@ public class MainActivity extends AppCompatActivity {
         // TODO Auto-generated method stub
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
-            // 获取选中的图片的Uri
             Uri imageFileUri = data.getData();
-            // 获取屏幕大小
             Display display = getWindowManager().getDefaultDisplay();
             float dw = display.getWidth();
             float dh = display.getHeight();
             //screen.setText("screenX:"+dw+"  screenY:"+dh);
 
             try {
-                // 解析图片时需要使用到的参数都封装在这个对象里了
                 BitmapFactory.Options options = new BitmapFactory.Options();
-                // 不为像素申请内存，只获取图片宽高
                 options.inJustDecodeBounds = true;
                 bitmap = BitmapFactory.decodeStream(getContentResolver()
                         .openInputStream(imageFileUri), null, options);
-                // 设置缩放比例
                 int heightRatio = (int) Math.ceil(options.outHeight / dh);
                 int widthRatio = (int) Math.ceil(options.outWidth / dw);
 
@@ -737,31 +654,21 @@ public class MainActivity extends AppCompatActivity {
                 height = options.outHeight;
                 point.setText("X:" + options.outWidth + "  Y:" + options.outHeight);
 
-                // 为像素申请内存
                 options.inJustDecodeBounds = false;
-                // 获取缩放后的图片
                 bitmap = BitmapFactory.decodeStream(getContentResolver()
                         .openInputStream(imageFileUri), null, options);
-                // 创建缩放后的图片副本
                 copyBitmap = Bitmap.createBitmap(bitmap.getWidth(),
                         bitmap.getHeight(), bitmap.getConfig());
                 //bitmapXY.setText("bitmapX:"+bitmap.getWidth()+"  bitmapY:"+bitmap.getHeight());
-                // 创建画布
                 canvas = new Canvas(copyBitmap);
-                // 创建画笔
                 paint = new Paint();
                 paint_test = new Paint();
-                // 设置画笔颜色
                 paint.setColor(Color.GREEN);
                 paint_test.setColor(Color.RED);
-                // 设置画笔宽度
                 paint.setStrokeWidth(10);
                 paint_test.setStrokeWidth(10);
-                // 开始作画，把原图的内容绘制在白纸上
                 canvas.drawBitmap(bitmap, new Matrix(), paint);
-                // 将处理后的图片放入imageview中
                 image.setImageBitmap(copyBitmap);
-                // 设置imageview监听
                 image.setOnTouchListener(new MyTouchListener());
             } catch (FileNotFoundException e) {
 
@@ -790,17 +697,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void write(String msg){
-        // 步骤1：获取输入值
         if(msg == null) return;
         FileOutputStream outputStream;
         try {
             if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
                 File sdCardDir = Environment.getExternalStorageDirectory();//获取SDCard目录
                 File sdFile = new File(sdCardDir, "/project/"+ filename + ".txt");
-                //FileOutputStream fos = new FileOutputStream(sdFile);
                 BufferedWriter bw = new BufferedWriter(new FileWriter(sdFile, true));
-                bw.write(msg);// 写入
-                bw.close(); // 关闭输出流
+                bw.write(msg);
+                bw.close();
             } else {
                 Toast.makeText(getApplicationContext(),"数据写入失败", Toast.LENGTH_SHORT).show();
             }
@@ -825,7 +730,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void calScale(){
-        //scale = height / (float)61.5;
-         scale = height / (float)52;
+        //scale = height / (float)61.5; // Library
+         scale = height / (float)52;    //Cudahy
     }
 }

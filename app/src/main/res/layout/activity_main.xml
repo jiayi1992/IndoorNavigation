@@ -59,10 +59,17 @@
     </LinearLayout>
 
     <EditText
+        android:id="@+id/initHeading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint ="Initial Heading"/>
+
+    <EditText
         android:id="@+id/userHeight"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint ="Input your height(cm)"/>
+        android:hint ="Input your height(cm)"
+        android:visibility="gone"/>
 
     <EditText
         android:id="@+id/fileName"
